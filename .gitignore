@@ -1,0 +1,6 @@
+data/
+docs/
+.DS_Store
+**/.DS_Store
+scripts/old
+**/.ipynb_checkpoints
