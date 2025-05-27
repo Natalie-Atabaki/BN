@@ -23,7 +23,7 @@ This script focuses on:
 - Simulating a discretised clinical-protein dataset (selected features from the previous step)
 - Fitting a discrete BN to the data using Bayesian parameter estimation
 - Computing posterior probabilities of a selected trait (e.g., `Trait1`)
-  given HIGH or LOW expression levels of selected proteins
+  given HIGH or LOW expression levels of selected proteins (#similarly on the Clinical variables)
 - Visualising the inferred probabilities with a polar bar chart
 
 ---
