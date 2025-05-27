@@ -12,7 +12,7 @@ This script performs the following:
 - Fits Bayesian Networks using the `bnlearn` package
 - Conducts k-fold cross-validation with parallel computing
 - Estimates arc strengths and direction probabilities from ensemble models
-- Filters networks based on confidence thresholds (strength ≥ 0.8, direction ≥ 0.5 or 0.8)
+- Filters networks based on confidence thresholds (strength ≥ 0.5 or 0.8, direction ≥ 0.5 or 0.8)
 - Compares learned network BIC scores to randomly generated networks
 - Generates visual output for BIC score distribution
 
