@@ -124,6 +124,9 @@ strength_relevant <- strength[(strength$from %in% relevant.nodes) & (strength$to
 saveRDS(list(network = averaged_relevant, strengths = strength_relevant), "~/network_simulated.rds")
 
 # ----------------------------- Filter by Strength & Export -----------------------------
+strength50_50 <- strength_relevant[strength_relevant$strength >= 0.5 & strength_relevant$direction >= 0.5, ]
+averaged50_50 <- averaged.network(strength50_50)
+
 strength80_50 <- strength_relevant[strength_relevant$strength >= 0.8 & strength_relevant$direction >= 0.5, ]
 averaged80_50 <- averaged.network(strength80_50)
 
@@ -131,12 +134,14 @@ strength80_80 <- strength_relevant[strength_relevant$strength >= 0.8 & strength_
 averaged80_80 <- averaged.network(strength80_80)
 
 wb <- createWorkbook()
+addWorksheet(wb, "Arcs_50_50")
 addWorksheet(wb, "Arcs_80_50")
 addWorksheet(wb, "Arcs_80_80")
+writeData(wb, sheet = "Arcs_50_50", strength50_50)
 writeData(wb, sheet = "Arcs_80_50", strength80_50)
 writeData(wb, sheet = "Arcs_80_80", strength80_80)
 saveWorkbook(wb, file = "~/Simulated_ArcStrengthDirection.xlsx", overwrite = TRUE)
-
+                        
 # ----------------------------- Compare BIC Scores to Random -----------------------------
 
 # We need a learned network without any undirected arcs since in this random data averaged80_50 had undirected arcs, averaged 80_60 was generated
