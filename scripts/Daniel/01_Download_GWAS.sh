@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIR=/Users/da1078co/Documents/Lund/PhD/Projects/BN_Naeimeh
+DIR=~/
 SUMDIR=${DIR}/data/GWAS_SumStat
 
 TRAIT=AbdSAT
