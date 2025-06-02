@@ -24,7 +24,16 @@ This part of the repository contains the scripts used to test the links suggeste
 - `PLINK v2.00a5.12 64-bit (25 Jun 2024)`
 
 - `R version 4.4.3 (2025-02-28) -- "Trophy Case"`
+  - `here==1.0.1`
+  - `readr==2.1.5`
+  - `dplyr==1.1.4`
+  - `tidyr==1.3.1`
+  - `purrr==1.0.2`
+  - `survey==4.4.2`
+  - `ggplot2==3.5.1`
+  - `stringr==1.5.1`
 
 - `Python 3.12.5`:
   - `synapseclient==4.6.0`
-  - 
+  - `pandas==2.2.3`
+  - `tarfile=0.9.0`
