@@ -19,6 +19,12 @@ This part of the repository contains the scripts used to test the links suggeste
 
 ## Dependencies
 
-- `GNU bash, version 5.1.8(1)-release (x86_64-redhat-linux-gnu)`
+- `GNU bash, version 3.2.57(1)-release (arm64-apple-darwin24)`
 
-- 
+- `PLINK v2.00a5.12 64-bit (25 Jun 2024)`
+
+- `R version 4.4.3 (2025-02-28) -- "Trophy Case"`
+
+- `Python 3.12.5`:
+  - `synapseclient==4.6.0`
+  - 
