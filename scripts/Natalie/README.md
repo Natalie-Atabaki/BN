@@ -33,7 +33,4 @@ This script focuses on:
 Both scripts rely on the following R packages:
 
 ```r
-install.packages(c(
-  "bnlearn", "gRain", "ggplot2", "dplyr", 
-  "openxlsx", "parallel"
-))
+install.packages(c("bnlearn", "gRain", "ggplot2", "dplyr","openxlsx", "parallel"))
