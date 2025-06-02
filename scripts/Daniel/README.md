@@ -13,8 +13,8 @@ This part of the repository contains the scripts used to test the links suggeste
 |`04_Download_pQTL.py`       |Download of pQTL summary data                                 |
 |`05_Harmonize.sh`           |Harmonizing GWAS summary statistics                           |
 |`06_UTILS.R`                |Functions used to run MR                                      |
-|`07_PrepareEdges.ipynb`     |               |
-|`08_EdgeTest.R`             |Running MR analyses on selected edges of the Bayesian Networks|
+|`07_PrepareEdges.ipynb`     |Preparing edges from the Bayesian Network to be tested        |
+|`08_EdgeTest.R`             |Running MR analyses on selected edges of the Bayesian Network |
 |`09_EdgeResults.ipynb`      |Processing results                                            |
 
 ## Dependencies
