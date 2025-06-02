@@ -223,8 +223,8 @@ SMRHEIDIfx <- function(DF, MINPOS, MAXPOS, PLINKBIN, REFPANEL){
 mrfx <- function(
   EXPOSURE, OUTCOME, 
   CIS = FALSE, CHROMLOC = NA, MINPOS = NA, MAXPOS = NA,
-  PLINKBIN = '/Users/da1078co/miniforge3/pkgs/plink-1.90b6.21-h2413b67_5/bin/plink',
-  REFPANEL = '/Users/da1078co/Documents/Data/1KG/EUR'
+  PLINKBIN = '~/miniforge3/pkgs/plink-1.90b6.21-h2413b67_5/bin/plink',
+  REFPANEL = '~/Documents/Data/1KG/EUR'
 ){
   
   # Check input
