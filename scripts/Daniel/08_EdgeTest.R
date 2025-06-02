@@ -1,4 +1,4 @@
-setwd('/Users/da1078co/Documents/Lund/PhD/Projects/BN_Naeimeh/scripts/Daniel/')
+setwd('~/')
 source('06_UTILS.R')
 library(purrr)
 edge_table_totest <- read_tsv(here('data/edge_table_totest.tsv'), show_col_types = FALSE)
