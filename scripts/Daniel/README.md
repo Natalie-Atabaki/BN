@@ -19,3 +19,6 @@ This part of the repository contains the scripts used to test the links suggeste
 
 ## Dependencies
 
+- `GNU bash, version 5.1.8(1)-release (x86_64-redhat-linux-gnu)`
+
+- 
