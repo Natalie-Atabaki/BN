@@ -4,7 +4,7 @@ import pandas as pd
 
 # Login
 syn = synapseclient.Synapse()
-PROJFOLDER = '/Users/da1078co/Documents/Lund/PhD/Projects/BN_Naeimeh/'
+PROJFOLDER = '~/'
 TOKEN = open(PROJFOLDER + 'data/synapse_tokenfile.txt','r').read()
 syn.login(authToken=TOKEN)
 
