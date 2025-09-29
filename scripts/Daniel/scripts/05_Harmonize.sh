@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DIR=~/
+DIR=/Users/da1078co/Documents/Lund/PhD/Projects/BN
 SUMDIR=${DIR}/data/GWAS_SumStat
 RESDIR=${DIR}/data/GWAS_Harmonized
 REFPANEL=/Users/da1078co/Documents/Data/1KG/EUR_NOPAL.tsv
@@ -10,88 +10,94 @@ HarmonFx() {
   awk \
   'BEGIN{OFS="\t"} \
   {
-    CHROM = $1
-    POS = $2
-    EA = $3
-    NEA = $4
-    EAF = $5
-    BETA = $6
-    SE = $7
-    PVAL = $8
+    # Expected input columns
+    CHROM = $1; POS = $2
+    EA = $3; NEA = $4; EAF = $5
+    BETA = $6; SE = $7; PVAL = $8
     RSID = $9
-    REFA1 = $10
-    REFA2 = $11
-    REFA2FREQ = $12
+    REFA1 = $10; REFA2 = $11; REFA2FREQ = $12
     
+    # Aligning to trait-increasing allele
     if (BETA > 0) {
-      EA_I = EA
-      NEA_I = NEA
-      EAF_I = EAF
+      EA_I = EA; NEA_I = NEA; EAF_I = EAF
     } else {
-      EA_I = NEA
-      NEA_I = EA
-      EAF_I = 1 - EAF
+      EA_I = NEA; NEA_I = EA; EAF_I = 1 - EAF
     }
-
     BETA_I = (BETA < 0) ? -BETA : BETA
 
+    # Palindromic SNPs
     PALIND1 = (REFA1 == "A" && REFA2 == "T") || (REFA1 == "T" && REFA2 == "A")
     PALIND2 = (REFA1 == "C" && REFA2 == "G") || (REFA1 == "G" && REFA2 == "C")
     PALIND = PALIND1 || PALIND2
 
-    REFA1C = (REFA1 == "A") ? "T": (REFA1 == "T") ? "A" :(REFA1 == "C") ? "G" : "C"
-    REFA2C = (REFA2 == "A") ? "T": (REFA2 == "T") ? "A" :(REFA2 == "C") ? "G" : "C"
+    # Alleles in the complementary strand
+    comp["A"]="T"
+    comp["T"]="A"
+    comp["C"]="G"
+    comp["G"]="C"
+    REFA1C = comp[REFA1]
+    REFA2C = comp[REFA2]
 
+    # Flipped allele frequency
     REFA2FREQF = 1 - REFA2FREQ
+
+    # Imputing frequency if missing
+    # Only for matching non-palindromic SNPs
+    validEAF = (EAF_I > 0 && EAF_I < 1)
+    if ( !(validEAF) && !(PALIND) ) {
+      if ( EA_I == REFA2 && NEA_I == REFA1 ) {
+        # Direct match
+        EAF_I = REFA2FREQ
+      } else if ( EA_I == REFA1 && NEA_I == REFA2 ) {
+        # Reverse match
+        EAF_I = REFA2FREQF
+      } else if ( EA_I == REFA2C && NEA_I == REFA1C ) {
+        # Complementary match
+        EAF_I = REFA2FREQ
+      } else if ( EA_I == REFA1C && NEA_I == REFA2C ) {
+        # Reverse-complementary match
+        EAF_I = REFA2FREQF
+      }
+    }
     
+    # Absolute differences in allele frequencies - original and flipped
     EAFDIFF1 = REFA2FREQ - EAF_I
     EAFDIFF1 = sqrt(EAFDIFF1*EAFDIFF1)
-    
     EAFDIFF2 = REFA2FREQF - EAF_I
     EAFDIFF2 = sqrt(EAFDIFF2*EAFDIFF2)
 
-    if ( EA_I == REFA2 && NEA_I == REFA1 ) {
-      if ( !(EAF ~ /^0\\.[0-9]+$/) ) {
-        if ( !PALIND ) {
-          REFA2FREQH = REFA2FREQ
-        } else { next }
-      } else if ( EAFDIFF1 < 0.2 ) {
+    # Harmonizing alleles and frequencies
+    if ( EA_I == REFA2 && NEA_I == REFA1 && EAFDIFF1 < 0.2 ) {
+      # Direct match
+      REFA2FREQH = REFA2FREQ
+    } else if ( EA_I == REFA1 && NEA_I == REFA2 && EAFDIFF2 < 0.2 ) {
+      # Reverse match
+      REFA2FREQH = REFA2FREQF
+    } else if ( PALIND ) {
+      # Palindromic SNPs
+      if ( EA_I == REFA2 && NEA_I == REFA1 && EAFDIFF2 < 0.2 ) {
+        # Direct match but flipped EAF
         REFA2FREQH = REFA2FREQ
-      } else if ( PALIND && EAFDIFF2 < 0.2 ) {
+      } else if ( EA_I == REFA1 && NEA_I == REFA2 && EAFDIFF1 < 0.2 ) {
+        # Reverse match but original EAF
         REFA2FREQH = REFA2FREQF
-      } else { next } 
-    } else if ( EA_I == REFA1 && NEA_I == REFA2 ) {
-      if ( !(EAF ~ /^0\\.[0-9]+$/) ) {
-        if ( !PALIND ) {
-          REFA2FREQH = REFA2FREQF
-        } else { next }
-      } else if ( EAFDIFF2 < 0.2 ) {
-        REFA2FREQH = REFA2FREQF
-      } else if ( PALIND && EAFDIFF1 < 0.2 ){
-        REFA2FREQH = REFA2FREQ
-      } else { next } 
-    } else if ( !PALIND ){
-      if ( EA_I == REFA2C && NEA_I == REFA1C ){
-        REFA2FREQH = REFA2FREQ
-      } else if ( EA_I == REFA1C && NEA_I == REFA2C ){
-        REFA2FREQH = REFA2FREQF
-      } else { next } 
-    } else { next } 
+      } else { next }
+    } else if ( EA_I == REFA2C && NEA_I == REFA1C && EAFDIFF1 < 0.2 ) {
+      # Complementary match
+      REFA2FREQH = REFA2FREQ
+    } else if ( EA_I == REFA1C && NEA_I == REFA2C && EAFDIFF2 < 0.2 ) {
+      # Reverse-complementary match
+      REFA2FREQH = REFA2FREQF
+    } else { next }
     
-    EAFX = ( !(EAF ~ /^0\\.[0-9]+$/) ) ? REFA2FREQH : EAF_I
-
-    EAFDIFF = REFA2FREQH - EAFX
-    EAFDIFF = sqrt(EAFDIFF*EAFDIFF)
-
-    if( EAFDIFF < 0.2 ){
-      print CHROM, POS, EA_I, NEA_I, EAFX, BETA_I, SE, PVAL, RSID
-    }
+    # Output
+    print CHROM, POS, REFA2, REFA1, REFA2FREQH, BETA_I, SE, PVAL, RSID
     
   }' \
   $1
 }
 
-TRAIT=AbdSAT
+TRAIT=SAT
 SUMSTAT=GCST90016672_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -103,7 +109,7 @@ awk 'BEGIN{OFS="\t"} \
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=AbdVAT
+TRAIT=VAT
 SUMSTAT=GCST90016671_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -131,21 +137,7 @@ awk 'BEGIN{OFS="\t"}\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=CIR
-SUMSTAT=ChTEgN
-RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
-echo -e $HEADER > $RES
-unzip -c $SUMDIR/BETACELL/${SUMSTAT} meta1cir.filthetmafn.rsid.selectedcolumns |\
-tail -n+4 |\
-sed 's/:/\t/g' |\
-awk 'BEGIN{OFS="\t"} \
-(FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,toupper($3),toupper($4),$5,$9,$10,$11,a[b]}' $REFPANEL - |\
-HarmonFx |\
-sort -k1,1V -k2,2n | uniq >> $RES
-
-TRAIT=FG
+TRAIT=Glucose
 SUMSTAT=GCST90002232_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -157,7 +149,7 @@ awk 'BEGIN{OFS="\t"} \
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=FI
+TRAIT=Insulin
 SUMSTAT=GCST90002238_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -169,7 +161,7 @@ awk 'BEGIN{OFS="\t"} \
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=Glu2hr
+TRAIT=TwoGlucose
 SUMSTAT=GCST90002227_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -221,19 +213,8 @@ awk 'BEGIN{OFS="\t"}\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=IFC
+TRAIT=TwoInsulin
 SUMSTAT=MAGIC_postchallengeIR_IFC_noBMI_ALL.tsv.gz
-RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
-echo -e $HEADER > $RES
-awk 'BEGIN{OFS="\t"}\
-(FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2}\
-(b in a){print $1,$2,$3,$4,$7,$5,$6,$8,a[b]}' $REFPANEL ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
-HarmonFx |\
-sort -k1,1V -k2,2n | uniq >> $RES
-
-TRAIT=ISI
-SUMSTAT=MAGIC_postchallengeIR_ISI_noBMI_ALL.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
 awk 'BEGIN{OFS="\t"}\
@@ -279,7 +260,7 @@ awk 'BEGIN{OFS="\t"} \
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=xinsdG30
+TRAIT=GlucoseSens
 SUMSTAT=ChTEgN
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
@@ -293,7 +274,7 @@ awk 'BEGIN{OFS="\t"} \
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-PQTLPANEL=${DIR}/data/protquery_olinkUKB.tsv
+PQTLPANEL=${DIR}/data/protquery_ukbppp.tsv
 
 tail -n+2 $PQTLPANEL |\
 cut -f1,18 |\

@@ -1,24 +1,16 @@
 # Functions for MR
 
-suppressMessages({
-  library(here)
-  library(readr)
-  library(dplyr)
-  library(tidyr)
-  library(survey)
-})
+# Libraries
+library(readr)
+library(dplyr)
+library(tidyr)
+library(survey)
 
 # Harmonise GWAS data
 harmonfx <- function(joindf) {
   # Complementary base dictionary
   compbase <- c("A" = "t", "T" = "a", "C" = "g", "G" = "c")
   joindf |>
-    # Making sure needed columns exist
-    select(
-      CHROM, POS, RSID,
-      EA_EXP, NEA_EXP, EAF_EXP, BETA_EXP, SE_EXP, PVAL_EXP,
-      EA_OUT, NEA_OUT, EAF_OUT, BETA_OUT, SE_OUT, PVAL_OUT
-    ) |>
     # Removing ambiguous palindromic SNPs with intermediate EAF
     mutate(
       PALIND1 = EA_EXP %in% c("A", "T") & NEA_EXP %in% c("A", "T"),
@@ -349,16 +341,11 @@ mrfx <- function(
   exploc,
   outcome,
   outloc,
-  cis = FALSE, chromloc = NA, minpos = NA, maxpos = NA,
+  atype,
+  chromloc = NA, minpos = NA, maxpos = NA,
   plinkbin = "~/miniforge3/pkgs/plink-1.90b6.21-h2413b67_5/bin/plink",
   refpanel = "~/Documents/Data/1KG/EUR"
 ) {
-
-  # Check input
-  if (cis) {
-    stopifnot(!is.na(chromloc), !is.na(minpos), !is.na(maxpos))
-  }
-
   # Reading exposure data
   expdf <- exploc |>
     file.path(paste0(exposure, "_hrmnzd.tsv")) |>
@@ -372,17 +359,16 @@ mrfx <- function(
     # Only valid instruments
     filter(PVAL_EXP < 5e-8)
   # If exposure instruments should be in cis region
-  if (cis) {
+  if (atype == "SMRHEIDI") {
     expdf <- expdf |>
       filter(
         CHROM == chromloc,
         POS > minpos, POS < maxpos
       )
   }
-
   # If enough valid exposure instruments
   if (nrow(expdf) > 0) {
-    # Proceeding with reading outcome data
+    # Proceeding to read outcome data
     outdf <- outloc |>
       file.path(paste0(outcome, "_hrmnzd.tsv")) |>
       read_tsv(show_col_types = FALSE) |>
@@ -399,11 +385,11 @@ mrfx <- function(
       joindf <- harmonfx(joindf)
       if (nrow(joindf) > 0) {
         # Running MR
-        if (cis) {
-          res <- smrheidifx(joindf, minpos, maxpos, plinkbin, refpanel)
-        } else {
-          res <- ivwmrfx(joindf, plinkbin, refpanel)
-        }
+        res <- switch(
+          atype,
+          SMRHEIDI = smrheidifx(joindf, minpos, maxpos, plinkbin, refpanel),
+          IVW = ivwmrfx(joindf, plinkbin, refpanel)
+        )
       } else {
         # No valid instruments after harmonization
         res <- list(RESDF = NULL, DATDF = NULL, FAILURE = "NoValidInsHarmon")
