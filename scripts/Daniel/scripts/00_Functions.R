@@ -236,24 +236,33 @@ r2topfx <- function(df, topsnp, plinkbin, refpanel) {
 # SMR-HEIDI calculation
 smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
   # Selecting SNPs in the cis region
-  cisdf <- filter(df, POS > minpos, POS < maxpos)
+  cisdf <- df |>
+    filter(POS > minpos, POS < maxpos) |>
+    # Cap very small betas and SEs to avoid numerical issues
+    mutate(
+      BETA_EXP = sign(BETA_EXP) * pmax(abs(BETA_EXP), 1e-10),
+      SE_EXP = pmax(SE_EXP, 1e-10),
+      BETA_OUT = sign(BETA_OUT) * pmax(abs(BETA_OUT), 1e-10),
+      SE_OUT = pmax(SE_OUT, 1e-10)
+    )
   # Top SNP
-  topsnpdf <- slice_max(cisdf, BETA_EXP / SE_EXP, n = 1, with_ties = FALSE)
+  topsnpdf <- slice_min(cisdf, PVAL_EXP, n = 1, with_ties = FALSE)
   # SMR calculation
   beta_smr <- with(topsnpdf, BETA_OUT / BETA_EXP)
   se_smr <- with(
     topsnpdf,
-    sqrt((beta_smr^2) * (((SE_EXP/BETA_EXP)^2) + ((SE_OUT/BETA_OUT)^2)))
+    sqrt((beta_smr^2) * (((SE_EXP / BETA_EXP)^2) + ((SE_OUT / BETA_OUT)^2)))
   )
-  pval_smr <- pchisq((beta_smr/se_smr)^2, df = 1, lower.tail = FALSE)
+  pval_smr <- pchisq((beta_smr / se_smr)^2, df = 1, lower.tail = FALSE)
   # HEIDI calculation
   # Calculating R2 to top SNP
-  r2tab <- r2topfx(df, topsnpdf$RSID, plinkbin, refpanel)
+  r2tab <- r2topfx(cisdf, topsnpdf$RSID, plinkbin, refpanel)
   # Merging R2 info
-  df <- inner_join(df, r2tab, by = c("CHROM", "POS", "RSID"))
+  cisdf <- cisdf |>
+    inner_join(r2tab, by = c("CHROM", "POS", "RSID"))
   # Selecting instruments for HEIDI test
   ins_thres <- pchisq(q = 10, df = 1, lower.tail = FALSE)
-  insdf <- df |>
+  insdf <- cisdf |>
     filter(
       # Top SNP always included
       RSID == topsnpdf$RSID |
@@ -273,21 +282,21 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
         desc(BETA_EXP / SE_EXP)
       )
     # Limiting to top SNP + 20 SNPs in LD
-    insdf <- slice(insdf, 1:21)
+    print(data.frame(insdf <- slice(insdf, 1:21)))
     # Calculating LD matrix
-    ldmat <- ldmatfx(insdf, plinkbin, refpanel)
+    print(ldmat <- ldmatfx(insdf, plinkbin, refpanel))
     # Estimated causal effect per instrument
-    beta_xy <- with(insdf, BETA_OUT / BETA_EXP)
+    print(beta_xy <- with(insdf, BETA_OUT / BETA_EXP))
     # Z-scores of instrument-exposure associations
-    zeta_gx <- with(insdf, BETA_EXP / SE_EXP)
+    print(zeta_gx <- with(insdf, BETA_EXP / SE_EXP))
     # Covariance of exposure Z-scores
-    zeta_gxmat <- zeta_gx %*% t(zeta_gx)
+    print(zeta_gxmat <- zeta_gx %*% t(zeta_gx))
     # Covariance of causal effect estimates
-    beta_xy_mat <- beta_xy %*% t(beta_xy)
+    print(beta_xy_mat <- beta_xy %*% t(beta_xy))
     # Outer product of standard errors of outcome effects
-    se_gymat <- with(insdf, SE_OUT %*% t(SE_OUT))
+    print(se_gymat <- with(insdf, SE_OUT %*% t(SE_OUT)))
     # Outer product of exposure effects
-    beta_gxmat <- with(insdf, BETA_EXP %*% t(BETA_EXP))
+    print(beta_gxmat <- with(insdf, BETA_EXP %*% t(BETA_EXP)))
     # Covariance matrix of estimated exposure-outcome effects
     cov_betaxy <- (
       # Uncertainty in outcome effects
@@ -301,12 +310,14 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
     var_diff <- cov_betaxy - cov_betaxy[1, ] + (se_smr^2)
     var_diff <- t(t(var_diff) - cov_betaxy[1, ])
     # Removing top SNP from estimated differences
-    diff <- diff[-1]
+    print(diff <- diff[-1])
     var_diff <- var_diff[-1, -1]
+    print(var_diff)
     # Chi-squared statistic of each difference
     chistat <- (diff^2) / diag(var_diff)
     # Correlation matrix of differences
     corr_diff <- cov2cor(var_diff)
+    print(corr_diff)
     # Eigenvalues of the correlation matrix
     lambda <- eigen(
       corr_diff, only.values = TRUE,
@@ -329,7 +340,7 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
   resdf <- mutate(
     topsnpdf,
     beta_smr = beta_smr, se_smr = se_smr,
-    pval_smr = pval_smr, pval_heidi = pval_heidi,
+    pval_smr = pval_smr, pvral_heidi = pval_heidi,
     nsnp_heidi = nsnp_heidi
   )
   list(resdf = resdf, datdf = df, fail = fail)

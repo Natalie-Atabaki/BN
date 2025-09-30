@@ -104,8 +104,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$3"\t"$4} \
-(b in a){print $3,$4,$5,$6,$7,$8,$9,$2,a[b]}' $REFPANEL - |\
+{if (($3"\t"$4) in a) print $3,$4,$5,$6,$7,$8,$9,$2,a[$3"\t"$4]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -116,8 +115,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$3"\t"$4} \
-(b in a){print $3,$4,$5,$6,$7,$8,$9,$2,a[b]}' $REFPANEL - |\
+{if (($3"\t"$4) in a) print $3,$4,$5,$6,$7,$8,$9,$2,a[$3"\t"$4]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -132,8 +130,7 @@ sed 's/:/\t/g' |\
 awk 'BEGIN{OFS="\t"} {print $1,$2,$3,$4,$8,$5,$6,10**(-$7)}' |\
 awk 'BEGIN{OFS="\t"}\
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2}\
-(b in a){print $0,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $0,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -144,8 +141,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,$3,$4,$5,$6,$7,$8,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $1,$2,$3,$4,$5,$6,$7,$8,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -156,8 +152,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,$3,$4,$5,$6,$7,$8,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $1,$2,$3,$4,$5,$6,$7,$8,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -168,8 +163,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,$3,$4,$5,$6,$7,$8,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $1,$2,$3,$4,$5,$6,$7,$8,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -180,8 +174,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,$3,$4,$5,$6,$7,$8,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $1,$2,$3,$4,$5,$6,$7,$8,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -192,8 +185,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$2"\t"$3} \
-(b in a){print $2,$3,$5,$4,$8,$14,$15,$16,a[b]}' $REFPANEL - |\
+{if (($2"\t"$3) in a) print $2,$3,$5,$4,$8,$14,$15,$16,a[$2"\t"$3]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -208,8 +200,7 @@ sed 's/:/\t/g' |\
 awk 'BEGIN{OFS="\t"} {print $1,$2,$3,$4,".",$5,$6,10**(-$7)}' |\
 awk 'BEGIN{OFS="\t"}\
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2}\
-(b in a){print $0,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $0,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -219,8 +210,7 @@ RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
 awk 'BEGIN{OFS="\t"}\
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2}\
-(b in a){print $1,$2,$3,$4,$7,$5,$6,$8,a[b]}' $REFPANEL ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
+{if (($1"\t"$2) in a) print $1,$2,$3,$4,$7,$5,$6,$8,a[$1"\t"$2]}' $REFPANEL ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -231,20 +221,18 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"}\
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$3"\t"$4}\
-(b in a){print $3,$4,$5,$6,$7,$8,$9,$2,a[b]}' $REFPANEL - |\
+{if (($3"\t"$4) in a) print $3,$4,$5,$6,$7,$8,$9,$2,a[$3"\t"$4]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
-TRAIT=PancreasFat
+TRAIT=PancFat
 SUMSTAT=GCST90016675_buildGRCh37.tsv.gz
 RES=${RESDIR}/${TRAIT}_hrmnzd.tsv
 echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"}\
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$3"\t"$4}\
-(b in a){print $3,$4,$5,$6,$7,$8,$9,$2,a[b]}' $REFPANEL - |\
+{if (($3"\t"$4) in a) print $3,$4,$5,$6,$7,$8,$9,$2,a[$3"\t"$4]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -255,8 +243,7 @@ echo -e $HEADER > $RES
 gunzip -c ${SUMDIR}/${TRAIT}/${SUMSTAT} |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$2"\t"$3} \
-(b in a){print $2,$3,$5,$4,$8,$14,$15,$16,a[b]}' $REFPANEL - |\
+{if (($2"\t"$3) in a) {print $2,$3,$5,$4,$8,$14,$15,$16,a[$2"\t"$3]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
@@ -269,15 +256,14 @@ tail -n+4 |\
 sed 's/:/\t/g' |\
 awk 'BEGIN{OFS="\t"} \
 (FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-{b=$1"\t"$2} \
-(b in a){print $1,$2,toupper($3),toupper($4),$5,$9,$10,$11,a[b]}' $REFPANEL - |\
+{if (($1"\t"$2) in a) print $1,$2,toupper($3),toupper($4),$5,$9,$10,$11,a[$1"\t"$2]}' $REFPANEL - |\
 HarmonFx |\
 sort -k1,1V -k2,2n | uniq >> $RES
 
 PQTLPANEL=${DIR}/data/protquery_ukbppp.tsv
 
 tail -n+2 $PQTLPANEL |\
-cut -f1,18 |\
+cut -f1,20 |\
 sed 's/.tar//g' |\
 while read -r GENE GFOLDER
 do
@@ -291,8 +277,7 @@ do
    done |\
    awk \
    '(FNR==NR){a[$1"\t"$2]=$3"\t"$4"\t"$5"\t"$6;next} \
-   {b=$1"\t"$3} \
-   (b in a){print $1,$3,$5,$4,$6,$10,$11,10**(-$13),a[b]}' \
+   {if (($1"\t"$3) in a) print $1,$3,$5,$4,$6,$10,$11,10**(-$13),a[$1"\t"$3]}' \
    $REFPANEL - |\
    HarmonFx |\
    sort -k1,1V -k2,2n | uniq >> $RES

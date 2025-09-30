@@ -1,7 +1,7 @@
 # Working directory
 setwd("/Users/da1078co/Documents/Lund/PhD/Projects/BN")
 # Libraries and functions
-source("00_Functions.R")
+source("scripts/Daniel/scripts/00_Functions.R")
 library(purrr)
 # Load edges to test
 edge_table_totest <- read_tsv(
@@ -10,6 +10,7 @@ edge_table_totest <- read_tsv(
 )
 # Running analyses
 edge_table_totest <- edge_table_totest |>
+  filter(node1 == "CD4", node2 == "HDL") |>
   mutate(
     MR_DONE = pmap_lgl(
       list(node1, node2, atype, CHROM, start, end),
