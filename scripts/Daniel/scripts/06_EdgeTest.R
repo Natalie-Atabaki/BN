@@ -10,7 +10,6 @@ edge_table_totest <- read_tsv(
 )
 # Running analyses
 edge_table_totest <- edge_table_totest |>
-  filter(node1 == "CD4", node2 == "HDL") |>
   mutate(
     MR_DONE = pmap_lgl(
       list(node1, node2, atype, CHROM, start, end),

@@ -6,77 +6,41 @@ library(dplyr)
 library(tidyr)
 library(survey)
 
-# Harmonise GWAS data
+#---------------------#
+# Harmonise GWAS data #
+#---------------------#
 harmonfx <- function(joindf) {
-  # Complementary base dictionary
-  compbase <- c("A" = "t", "T" = "a", "C" = "g", "G" = "c")
   joindf |>
-    # Removing ambiguous palindromic SNPs with intermediate EAF
     mutate(
-      PALIND1 = EA_EXP %in% c("A", "T") & NEA_EXP %in% c("A", "T"),
-      PALIND2 = EA_EXP %in% c("C", "G") & NEA_EXP %in% c("C", "G"),
-      PALIND = PALIND1 | PALIND2
-    ) |>
-    filter(
-      !(
-        PALIND & (
-          (EAF_EXP > 0.4 & EAF_EXP < 0.6) |
-            (EAF_OUT > 0.4 & EAF_OUT < 0.6)
-        )
-      )
-    ) |>
-    mutate(
-      # Create complementary alleles
-      EA_COMP = stringr::str_replace_all(EA_EXP, compbase) |> toupper(),
-      NEA_COMP = stringr::str_replace_all(NEA_EXP, compbase) |> toupper(),
-      # Flipped EAF for outcome
       EAF_OUTF = 1 - EAF_OUT,
       HARMON = case_when(
         # Direct match
         EA_EXP == EA_OUT & NEA_EXP == NEA_OUT &
-          abs(EAF_EXP - EAF_OUT) < 0.2 ~ 1,
+          abs(EAF_EXP - EAF_OUT) < 0.1 ~ 1,
         # Reverse match
         EA_EXP == NEA_OUT & NEA_EXP == EA_OUT &
-          abs(EAF_EXP - EAF_OUTF) < 0.2 ~ -1,
-        # Direct match, but palindromic
-        EA_EXP == EA_OUT & NEA_EXP == NEA_OUT &
-          abs(EAF_EXP - EAF_OUTF) < 0.2 & PALIND ~ -1,
-        # Reverse match, but palindromic
-        EA_EXP == NEA_OUT & NEA_EXP == EA_OUT &
-          abs(EAF_EXP - EAF_OUT) < 0.2 & PALIND ~ 1,
-        # Match on complement, not palindromic
-        EA_COMP == EA_OUT & NEA_COMP == NEA_OUT &
-          abs(EAF_EXP - EAF_OUT) < 0.2 & !PALIND ~ 1,
-        # Match on reverse complement, not palindromic
-        EA_COMP == NEA_OUT & NEA_COMP == EA_OUT &
-          abs(EAF_EXP - EAF_OUTF) < 0.2 & !PALIND ~ -1
+          abs(EAF_EXP - EAF_OUTF) < 0.1 ~ -1
+        # Only two options due to prior harmonization
       ),
       # Harmonizing outcome effect and EAF
       BETA_OUT = BETA_OUT * HARMON,
       EAF_OUT = ifelse(HARMON == 1, EAF_OUT, EAF_OUTF)
     ) |>
     # Keeping only harmonized SNPs with similar EAF
-    filter(
-      !is.na(HARMON),
-      abs(EAF_EXP - EAF_OUT) < 0.2
-    ) |>
+    filter(!is.na(HARMON)) |>
     # Final table
     transmute(
       CHROM, POS, RSID, EA = EA_EXP, NEA = NEA_EXP,
       EAF_EXP,
-      # Capping very small betas and SEs to avoid numerical issues
-      BETA_EXP = sign(BETA_EXP) * pmax(abs(BETA_EXP), 1e-22),
-      SE_EXP = pmax(SE_EXP, 1e-22),
-      PVAL_EXP,
+      BETA_EXP, SE_EXP, PVAL_EXP,
       EAF_OUT,
-      # Capping very small betas and SEs to avoid numerical issues
-      BETA_OUT = sign(BETA_OUT) * pmax(abs(BETA_OUT), 1e-22),
-      SE_OUT = pmax(SE_OUT, 1e-22),
-      PVAL_OUT
+      BETA_OUT, SE_OUT, PVAL_OUT
     )
 }
 
-# Clumping
+#----------#
+# Clumping #
+#----------#
 clumpfx <- function(joindf, plinkbin, refpanel) {
   # Temporary file with SNPs to clump
   temploc <- tempfile()
@@ -110,8 +74,9 @@ clumpfx <- function(joindf, plinkbin, refpanel) {
   joindf |>
     filter(RSID %in% clumped)
 }
-
-# IVW MR
+#--------#
+# IVW MR #
+#--------#
 ivwmrfx <- function(df, plinkbin, refpanel) {
   # Clumping
   clumpdf <- clumpfx(df, plinkbin, refpanel)
@@ -170,8 +135,12 @@ ivwmrfx <- function(df, plinkbin, refpanel) {
     failure <- "SingleValidIns"
   }
   # Returning results
-  list(RESDF = resdf, DATDF = datdf, FAILURE = failure)
+  list(resdf = resdf, datdf = datdf, failure = failure)
 }
+
+#---------------------#
+# SMR-HEIDI functions #
+#---------------------#
 
 # LD matrix calculation
 ldmatfx <- function(df, plinkbin, refpanel) {
@@ -238,12 +207,9 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
   # Selecting SNPs in the cis region
   cisdf <- df |>
     filter(POS > minpos, POS < maxpos) |>
-    # Cap very small betas and SEs to avoid numerical issues
+    # Cap extremely small outcome betas to avoid numerical issues
     mutate(
-      BETA_EXP = sign(BETA_EXP) * pmax(abs(BETA_EXP), 1e-10),
-      SE_EXP = pmax(SE_EXP, 1e-10),
-      BETA_OUT = sign(BETA_OUT) * pmax(abs(BETA_OUT), 1e-10),
-      SE_OUT = pmax(SE_OUT, 1e-10)
+      BETA_OUT = ifelse(BETA_OUT < 0, -1, 1) * pmax(abs(BETA_OUT), 1e-10)
     )
   # Top SNP
   topsnpdf <- slice_min(cisdf, PVAL_EXP, n = 1, with_ties = FALSE)
@@ -266,8 +232,12 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
     filter(
       # Top SNP always included
       RSID == topsnpdf$RSID |
-        # Other valid instruments in LD with top SNP, only up to 0.9
-        (R2 > 0.05 & R2 < 0.9 & PVAL_EXP < ins_thres)
+        # Other valid instruments in LD with top SNP
+        (
+          R2 > 0.05 & # Excluding weak LD
+            R2 < 0.9 & # Excluding perfect LD
+            PVAL_EXP < ins_thres # Sufficiently strong instruments
+        )
     )
   # HEIDI test only if more than 3 SNPs
   if (nrow(insdf) > 3) {
@@ -282,21 +252,21 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
         desc(BETA_EXP / SE_EXP)
       )
     # Limiting to top SNP + 20 SNPs in LD
-    print(data.frame(insdf <- slice(insdf, 1:21)))
+    data.frame(insdf <- slice(insdf, 1:21))
     # Calculating LD matrix
-    print(ldmat <- ldmatfx(insdf, plinkbin, refpanel))
+    ldmat <- ldmatfx(insdf, plinkbin, refpanel)
     # Estimated causal effect per instrument
-    print(beta_xy <- with(insdf, BETA_OUT / BETA_EXP))
+    beta_xy <- with(insdf, BETA_OUT / BETA_EXP)
     # Z-scores of instrument-exposure associations
-    print(zeta_gx <- with(insdf, BETA_EXP / SE_EXP))
+    zeta_gx <- with(insdf, BETA_EXP / SE_EXP)
     # Covariance of exposure Z-scores
-    print(zeta_gxmat <- zeta_gx %*% t(zeta_gx))
+    zeta_gxmat <- zeta_gx %*% t(zeta_gx)
     # Covariance of causal effect estimates
-    print(beta_xy_mat <- beta_xy %*% t(beta_xy))
+    beta_xy_mat <- beta_xy %*% t(beta_xy)
     # Outer product of standard errors of outcome effects
-    print(se_gymat <- with(insdf, SE_OUT %*% t(SE_OUT)))
+    se_gymat <- with(insdf, SE_OUT %*% t(SE_OUT))
     # Outer product of exposure effects
-    print(beta_gxmat <- with(insdf, BETA_EXP %*% t(BETA_EXP)))
+    beta_gxmat <- with(insdf, BETA_EXP %*% t(BETA_EXP))
     # Covariance matrix of estimated exposure-outcome effects
     cov_betaxy <- (
       # Uncertainty in outcome effects
@@ -310,14 +280,14 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
     var_diff <- cov_betaxy - cov_betaxy[1, ] + (se_smr^2)
     var_diff <- t(t(var_diff) - cov_betaxy[1, ])
     # Removing top SNP from estimated differences
-    print(diff <- diff[-1])
+    diff <- diff[-1]
     var_diff <- var_diff[-1, -1]
-    print(var_diff)
+    var_diff
     # Chi-squared statistic of each difference
     chistat <- (diff^2) / diag(var_diff)
     # Correlation matrix of differences
     corr_diff <- cov2cor(var_diff)
-    print(corr_diff)
+    corr_diff
     # Eigenvalues of the correlation matrix
     lambda <- eigen(
       corr_diff, only.values = TRUE,
@@ -340,10 +310,10 @@ smrheidifx <- function(df, minpos, maxpos, plinkbin, refpanel) {
   resdf <- mutate(
     topsnpdf,
     beta_smr = beta_smr, se_smr = se_smr,
-    pval_smr = pval_smr, pvral_heidi = pval_heidi,
+    pval_smr = pval_smr, pval_heidi = pval_heidi,
     nsnp_heidi = nsnp_heidi
   )
-  list(resdf = resdf, datdf = df, fail = fail)
+  list(resdf = resdf, datdf = df, failure = fail)
 }
 
 # Global MR function
@@ -360,7 +330,7 @@ mrfx <- function(
   # Reading exposure data
   expdf <- exploc |>
     file.path(paste0(exposure, "_hrmnzd.tsv")) |>
-    read_tsv(show_col_types = FALSE) |>
+    read_tsv(col_types = "nnccnnnnc") |>
     rename_with(
       function(x) {
         paste(x, "EXP", sep = "_")
@@ -382,7 +352,7 @@ mrfx <- function(
     # Proceeding to read outcome data
     outdf <- outloc |>
       file.path(paste0(outcome, "_hrmnzd.tsv")) |>
-      read_tsv(show_col_types = FALSE) |>
+      read_tsv(col_types = "nnccnnnnc") |>
       rename_with(
         function(x) {
           paste(x, "OUT", sep = "_")
@@ -403,15 +373,15 @@ mrfx <- function(
         )
       } else {
         # No valid instruments after harmonization
-        res <- list(RESDF = NULL, DATDF = NULL, FAILURE = "NoValidInsHarmon")
+        res <- list(resdf = NULL, datdf = NULL, failure = "NoValidInsHarmon")
       }
     } else {
       # No valid instruments after merging exposure and outcome data
-      res <- list(RESDF = NULL, DATDF = NULL, FAILURE = "NoMatchForValidIns")
+      res <- list(resdf = NULL, datdf = NULL, failure = "NoMatchForValidIns")
     }
   } else {
     # Not enough valid exposure instruments, returning empty result
-    res <- list(RESDF = NULL, DATDF = NULL, FAILURE = "NoValidIns")
+    res <- list(resdf = NULL, datdf = NULL, failure = "NoValidIns")
   }
   # Returning results
   res
