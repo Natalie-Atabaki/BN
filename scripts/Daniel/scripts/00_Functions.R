@@ -61,7 +61,7 @@ clumpfx <- function(joindf, plinkbin, refpanel) {
   )
   # Reading clumped SNPs
   clumped <- paste(
-    "awk '{print $3}'", 
+    "awk '{print $3}'",
     paste(temploc, "clumped", sep = ".")
   ) |>
     pipe() |>
@@ -162,7 +162,7 @@ ldmatfx <- function(df, plinkbin, refpanel) {
   # Reading LD matrix
   ldmat <- read_table(
     paste(ldfile, "ld", sep = "."),
-    col_names = FALSE, 
+    col_names = FALSE,
     col_types = cols(.default = "n")
   )
   ldmat <- as.matrix(ldmat)
@@ -193,10 +193,10 @@ r2topfx <- function(df, topsnp, plinkbin, refpanel) {
   )
   # Reading R2 table
   r2df <-  read_table(
-    paste(r2file, "ld", sep = "."), 
-    col_types = '---nncn-',
+    paste(r2file, "ld", sep = "."),
+    col_types = "---nncn-",
     skip = 1,
-    col_names = c('CHROM', 'POS', 'RSID', 'R2')
+    col_names = c("CHROM", "POS", "RSID", "R2")
   )
   unlink(paste0(r2file, "*"))
   r2df
@@ -331,14 +331,8 @@ mrfx <- function(
   expdf <- exploc |>
     file.path(paste0(exposure, "_hrmnzd.tsv")) |>
     read_tsv(col_types = "nnccnnnnc") |>
-    rename_with(
-      function(x) {
-        paste(x, "EXP", sep = "_")
-      },
-      -c(CHROM, POS, RSID)
-    ) |>
     # Only valid instruments
-    filter(PVAL_EXP < 5e-8)
+    filter(PVAL < 5e-8)
   # If exposure instruments should be in cis region
   if (atype == "SMRHEIDI") {
     expdf <- expdf |>
@@ -352,15 +346,13 @@ mrfx <- function(
     # Proceeding to read outcome data
     outdf <- outloc |>
       file.path(paste0(outcome, "_hrmnzd.tsv")) |>
-      read_tsv(col_types = "nnccnnnnc") |>
-      rename_with(
-        function(x) {
-          paste(x, "OUT", sep = "_")
-        },
-        -c(CHROM, POS, RSID)
-      )
+      read_tsv(col_types = "nnccnnnnc")
     # Merging exposure and outcome data
-    joindf <- inner_join(expdf, outdf, by = c("CHROM", "POS", "RSID"))
+    joindf <- inner_join(
+      expdf, outdf,
+      by = c("CHROM", "POS", "RSID"),
+      suffix = c("_EXP", "_OUT")
+    )
     if (nrow(joindf) > 0) {
       # Harmonizing
       joindf <- harmonfx(joindf)
@@ -369,7 +361,7 @@ mrfx <- function(
         res <- switch(
           atype,
           SMRHEIDI = smrheidifx(joindf, minpos, maxpos, plinkbin, refpanel),
-          IVW = ivwmrfx(joindf, plinkbin, refpanel)
+          IVWMR = ivwmrfx(joindf, plinkbin, refpanel)
         )
       } else {
         # No valid instruments after harmonization
