@@ -26,16 +26,20 @@ edge_table_totest <- edge_table_totest |>
           paste0(exposure, "_", outcome, ".rds")
         )
         res <- mrfx(
-          exposure, exploc = file.path("data", "GWAS_Harmonized"),
-          outcome, outloc = file.path("data", "GWAS_Harmonized"),
+          exposure,
+          exploc = file.path("data", "GWAS_Harmonized"),
+          outcome,
+          outloc = file.path("data", "GWAS_Harmonized"),
           analysistype,
-          chromloc,
-          minpos = startpos - 1e6, maxpos = endpos + 1e6,
           plinkbin = file.path(
             "/Users/da1078co/miniforge3",
             "pkgs/plink-1.90b6.21-h2413b67_5/bin/plink"
           ),
-          refpanel = "/Users/da1078co/Documents/Data/1KG/EUR"
+          refpanel = "/Users/da1078co/Documents/Data/1KG/EUR",
+          clump_pval = 5e-08, clump_r2 = 0.01, clump_kb = 250,
+          chromloc,
+          minpos = startpos - 1e6, maxpos = endpos + 1e6,
+          kbwindow = 1000
         )
         write_rds(res, file = resfile)
         message("Done.")
